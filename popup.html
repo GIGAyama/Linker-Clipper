@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>GIGA-Linker Clipper</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20,400,1,0" />
+  <style>
+    body { width: 350px; font-family: 'Noto Sans JP', sans-serif; margin: 0; }
+    /* スクロールバーを少し細く綺麗にする */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 flex flex-col h-[500px]">
+  
+  <header class="bg-white p-3 border-b border-slate-200 flex items-center gap-2 shadow-sm shrink-0">
+    <div class="w-8 h-8 bg-green-500 rounded-lg flex items-center justify-center text-white">
+      <span class="material-symbols-rounded text-xl">local_library</span>
+    </div>
+    <h1 class="font-bold text-slate-800 flex-1">GIGA-Linker Clipper</h1>
+  </header>
+
+  <div class="flex-1 overflow-y-auto p-4 flex flex-col gap-4">
+    
+    <!-- 設定エリア (GASのURLを入れる場所) -->
+    <div class="bg-white p-3 rounded-xl shadow-sm border border-slate-200">
+      <label class="text-xs font-bold text-slate-500 mb-1 flex items-center gap-1">
+        <span class="material-symbols-rounded text-[14px]">link</span> WebアプリのURL (1回だけ設定)
+      </label>
+      <input type="text" id="gas-url-input" placeholder="https://script.google.com/macros/s/..." 
+        class="w-full p-2 text-xs rounded-lg border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-green-500 outline-none transition-all">
+    </div>
+
+    <!-- ストックされたURLのリスト -->
+    <div class="flex-1 flex flex-col">
+      <div class="flex justify-between items-end mb-2">
+        <h2 class="text-sm font-bold text-slate-700 flex items-center gap-1">
+          <span class="material-symbols-rounded text-[16px]">list_alt</span> 送信待ちリスト
+        </h2>
+        <span id="count-badge" class="bg-green-100 text-green-700 text-[10px] font-bold px-2 py-0.5 rounded-full">0件</span>
+      </div>
+
+      <div id="site-list" class="flex-1 overflow-y-auto space-y-2 min-h-[150px] bg-slate-100/50 p-2 rounded-xl border border-slate-200 border-dashed">
+        <!-- JSでここにリストが追加されます -->
+      </div>
+    </div>
+  </div>
+
+  <!-- アクションボタンエリア -->
+  <div class="p-4 bg-white border-t border-slate-200 shrink-0">
+    <div id="status-msg" class="text-xs text-center mb-2 font-bold hidden"></div>
+    <div class="flex gap-2">
+      <button id="clear-btn" class="p-3 bg-slate-100 text-slate-500 hover:bg-slate-200 rounded-xl transition-colors flex items-center justify-center">
+        <span class="material-symbols-rounded text-xl">delete_sweep</span>
+      </button>
+      <button id="send-btn" class="flex-1 py-3 bg-green-500 hover:bg-green-600 text-white rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed">
+        <span class="material-symbols-rounded text-xl">auto_awesome</span> AIで一括登録する
+      </button>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
