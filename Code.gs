@@ -85,7 +85,98 @@ function deleteSite(id) {
   return getSites();
 }
 
-// --- 極限まで軽量化した情報取得ロジック（絶対にフリーズしません） ---
+// --- Gemini APIによるサイト自動分析 ---
+function analyzeWithGemini(url, title, description) {
+  // フォールバック値（API失敗時やキー未設定時に返す安全なデフォルト）
+  const fallback = { subject: 'その他', grade: '全学年', memo: description || '' };
+
+  try {
+    const apiKey = PropertiesService.getScriptProperties().getProperty('GEMINI_API_KEY');
+    if (!apiKey) {
+      console.log('GEMINI_API_KEY未設定のためフォールバック');
+      return fallback;
+    }
+
+    const prompt = `あなたは小学校教員向けの学習サイト分類アシスタントです。
+以下のサイト情報を分析し、JSONのみを返してください。説明文やマークダウンは不要です。
+
+【サイト情報】
+- URL: ${url}
+- タイトル: ${title}
+- 説明: ${description || 'なし'}
+
+【出力JSON形式】
+{
+  "subject": "該当する教科をカンマ区切りで（選択肢: 国語,算数,理科,社会,英語,生活,道徳,音楽,図工,家庭科,総合,学活,体育,情報,その他）",
+  "grade": "対象学年をカンマ区切りで（選択肢: 低学年,中学年,高学年,特支,全学年,教員用）",
+  "memo": "サイトの概要を50文字以内で簡潔に"
+}
+
+注意:
+- subjectは最も関連性の高い教科を1〜3個選んでください
+- gradeは対象となる学年層を選んでください。幅広い場合は「全学年」としてください
+- memoは教員がサイトの内容を素早く把握できる端的な説明にしてください
+- 純粋なJSONのみ出力してください`;
+
+    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+    const payload = {
+      contents: [{ parts: [{ text: prompt }] }],
+      generationConfig: {
+        temperature: 0.1,
+        maxOutputTokens: 256
+      }
+    };
+
+    const response = UrlFetchApp.fetch(endpoint, {
+      method: 'post',
+      contentType: 'application/json',
+      payload: JSON.stringify(payload),
+      muteHttpExceptions: true
+    });
+
+    const statusCode = response.getResponseCode();
+    if (statusCode !== 200) {
+      console.log(`Gemini APIエラー (HTTP ${statusCode}):`, response.getContentText());
+      return fallback;
+    }
+
+    const result = JSON.parse(response.getContentText());
+    const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!text) {
+      console.log('Gemini応答にテキストなし');
+      return fallback;
+    }
+
+    // JSONブロックを抽出（```json ... ``` でラップされている場合にも対応）
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      console.log('Gemini応答からJSON抽出失敗:', text);
+      return fallback;
+    }
+
+    const parsed = JSON.parse(jsonMatch[0]);
+
+    // 各フィールドのバリデーション
+    const validSubjects = ['国語','算数','理科','社会','英語','生活','道徳','音楽','図工','家庭科','総合','学活','体育','情報','その他'];
+    const validGrades = ['低学年','中学年','高学年','特支','全学年','教員用'];
+
+    const subject = parsed.subject
+      ? parsed.subject.split(',').map(s => s.trim()).filter(s => validSubjects.includes(s)).join(',') || 'その他'
+      : 'その他';
+    const grade = parsed.grade
+      ? parsed.grade.split(',').map(s => s.trim()).filter(s => validGrades.includes(s)).join(',') || '全学年'
+      : '全学年';
+    const memo = parsed.memo ? String(parsed.memo).substring(0, 100) : (description || '');
+
+    return { subject, grade, memo };
+
+  } catch (e) {
+    console.log('Gemini分析で例外:', e);
+    return fallback;
+  }
+}
+
+// --- サイト情報取得＋AI分析ロジック ---
 function fetchUrlInfo(urls) {
   const validUrls = urls.map(u => u.trim()).filter(u => u);
   if (validUrls.length === 0) return [];
@@ -96,7 +187,7 @@ function fetchUrlInfo(urls) {
     let description = "";
 
     try {
-      // 1件ずつ安全にフェッチ。重い処理は一切しません。
+      // 1件ずつ安全にフェッチ
       const response = UrlFetchApp.fetch(url, { muteHttpExceptions: true, followRedirects: true });
       const html = response.getContentText("UTF-8");
       
@@ -134,7 +225,6 @@ function fetchUrlInfo(urls) {
       }
     } catch (e) {
       console.log(`フェッチエラー (${url}):`, e);
-      // アクセス拒否されても落ちず、URLをタイトルにして強行する
     }
 
     // 最終防衛線
@@ -144,17 +234,19 @@ function fetchUrlInfo(urls) {
       if (domainMatch) imageUrl = `https://www.google.com/s2/favicons?domain=${domainMatch[0]}&sz=256`;
     }
 
-    // AIを使わず、即座にデータを返す
+    // Gemini APIで教科・学年・概要を自動推定（失敗してもフォールバックで安全）
+    const aiResult = analyzeWithGemini(url, title, description);
+
     return {
       url: url,
       title: title,
       imageUrl: imageUrl,
-      subject: 'その他',
-      grade: '全学年',
+      subject: aiResult.subject,
+      grade: aiResult.grade,
       cbStudent: '〇',
       cbTeacher: '〇',
       pcStaff: '〇',
-      memo: description || '',
+      memo: aiResult.memo,
       author: '情報部'
     };
   });

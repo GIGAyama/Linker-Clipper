@@ -14,5 +14,11 @@
   "action": {
     "default_popup": "popup.html",
     "default_title": "GIGA-Linkerに一括登録"
-  }
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["icon.svg"],
+      "matches": ["<all_urls>"]
+    }
+  ]
 }

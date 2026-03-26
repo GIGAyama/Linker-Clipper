@@ -92,25 +92,21 @@ document.addEventListener('DOMContentLoaded', () => {
     sendBtn.innerHTML = `<span class="material-symbols-rounded text-xl animate-spin">autorenew</span> 送信・解析中...`;
     
     try {
-      // データベース（GAS）にPOSTリクエストを送る
-      const response = await fetch(url, {
+      // GAS Web Appはリダイレクトするため、no-corsモードでPOSTを送信
+      // （redirect: 'follow'だとリダイレクト先にGETで再リクエストされ、POSTボディが消失する）
+      await fetch(url, {
         method: 'POST',
-        redirect: 'follow', // GASでPOSTを受け取るための必須設定
+        mode: 'no-cors',
         headers: {
           'Content-Type': 'text/plain;charset=utf-8',
         },
         body: JSON.stringify({ urls: pendingSites.map(s => s.url) })
       });
 
-      const result = await response.json();
-
-      if (result.status === 'success') {
-        showStatus(result.message, 'success');
-        pendingSites = []; // 成功したらリストを空にする
-        saveAndRender();
-      } else {
-        throw new Error(result.message);
-      }
+      // no-corsではレスポンス内容を読めないため、送信完了をもって成功とみなす
+      showStatus(`${pendingSites.length}件のサイトを送信しました！`, 'success');
+      pendingSites = [];
+      saveAndRender();
     } catch (error) {
       showStatus('送信エラー: ' + error.message, 'error');
     } finally {
