@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>学習サイトリンク集</title>
+  
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,1,0" />
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: { app: { 50: '#f0fdf4', 500: '#22c55e', 600: '#16a34a', 700: '#15803d' } },
+          fontFamily: { sans: ['"Nunito"', '"Noto Sans JP"', 'sans-serif'] }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { -webkit-tap-highlight-color: transparent; }
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+    .glass { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(8px); }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 pt-16 pb-24">
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useMemo, useCallback, memo } = React;
+
+    const runGAS = (funcName, ...args) => {
+      return new Promise((resolve, reject) => {
+        google.script.run
+          .withSuccessHandler(resolve)
+          .withFailureHandler(reject)
+          [funcName](...args);
+      });
+    };
+
+    const useDebounce = (value, delay) => {
+      const [debouncedValue, setDebouncedValue] = useState(value);
+      useEffect(() => {
+        const handler = setTimeout(() => { setDebouncedValue(value); }, delay);
+        return () => { clearTimeout(handler); };
+      }, [value, delay]);
+      return debouncedValue;
+    };
+
+    const Toast = ({ message, type, isVisible }) => (
+      <div className={`fixed bottom-20 left-1/2 transform -translate-x-1/2 z-[60] transition-all duration-300 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'}`}>
+        <div className={`px-6 py-3 rounded-full shadow-lg font-bold text-white flex items-center gap-2 ${type === 'error' ? 'bg-red-500' : 'bg-slate-800'}`}>
+          {type === 'success' && <span className="material-symbols-rounded text-xl">check_circle</span>}
+          {type === 'loading' && <span className="material-symbols-rounded text-xl animate-spin">autorenew</span>}
+          <span>{message}</span>
+        </div>
+      </div>
+    );
+
+    const ThumbnailImage = ({ src, size = 'large' }) => {
+      const [error, setError] = useState(false);
+      if (!src || error) {
+        return (
+          <div className="w-full h-full flex flex-col items-center justify-center bg-slate-100 text-slate-400">
+            <span className={`material-symbols-rounded ${size === 'small' ? 'text-2xl' : 'text-3xl mb-2'}`}>image</span>
+            {size === 'large' && <span className="text-xs font-bold">No Image</span>}
+          </div>
+        );
+      }
+      return <img src={src} alt="サムネイル" loading="lazy" decoding="async" className="w-full h-full object-cover transition-opacity duration-300" onError={() => setError(true)} />;
+    };
+
+    const MultiSelectTags = ({ options, selectedString, onChange, type = "subject" }) => {
+      const selectedArr = selectedString ? selectedString.split(',').filter(s=>s) : [];
+      
+      const toggle = (opt) => {
+        let newArr = [...selectedArr];
+        if (selectedArr.includes(opt)) {
+          newArr = newArr.filter(s => s !== opt);
+        } else {
+          newArr.push(opt);
+          if (type === 'grade') {
+            if (opt === '全学年') {
+              newArr = newArr.filter(s => !['低学年', '中学年', '高学年', '特支'].includes(s));
+            } else if (['低学年', '中学年', '高学年', '特支'].includes(opt)) {
+              newArr = newArr.filter(s => s !== '全学年');
+            }
+          }
+        }
+        onChange(newArr.join(','));
+      };
+
+      return (
+        <div className="flex flex-wrap gap-2 mt-1">
+          {options.map(opt => {
+            const isSelected = selectedArr.includes(opt);
+            return (
+              <button 
+                key={opt} type="button" onClick={() => toggle(opt)}
+                className={`px-3 py-1.5 text-[11px] font-bold rounded-full border transition-all ${
+                  isSelected 
+                    ? (type === 'subject' ? 'bg-app-500 text-white border-app-500 shadow-sm' : 'bg-slate-700 text-white border-slate-700 shadow-sm')
+                    : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'
+                }`}>
+                {opt}
+              </button>
+            );
+          })}
+        </div>
+      );
+    };
+
+    const BadgeList = ({ str, type }) => {
+      const arr = str ? str.split(',').filter(s=>s) : [];
+      if (arr.length === 0) return null;
+      return (
+        <div className="flex flex-wrap gap-1">
+          {arr.map((item, i) => (
+            <span key={i} className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${type === 'subject' ? 'bg-app-50 text-app-600' : 'bg-slate-100 text-slate-600'}`}>
+              {item}
+            </span>
+          ))}
+        </div>
+      );
+    };
+
+    const Header = memo(({ viewMode, setViewMode }) => (
+      <header className="fixed top-0 left-0 w-full z-40 glass shadow-sm px-4 h-16 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <div className="w-10 h-10 bg-app-500 rounded-xl flex items-center justify-center text-white shadow-sm">
+            <span className="material-symbols-rounded text-2xl">local_library</span>
+          </div>
+          <h1 className="text-xl font-bold text-slate-800 tracking-tight">学習サイトリンク集</h1>
+        </div>
+        <div className="flex gap-2">
+          <button onClick={() => setViewMode(v => v === 'card' ? 'list' : 'card')} className="p-2 bg-slate-100 rounded-full hover:bg-slate-200 transition-colors">
+            <span className="material-symbols-rounded text-xl text-slate-600">{viewMode === 'card' ? 'view_list' : 'grid_view'}</span>
+          </button>
+        </div>
+      </header>
+    ));
+
+    const SiteCard = memo(({ site, openEdit }) => (
+      <a href={site.url} target="_blank" rel="noopener noreferrer" className="block bg-white rounded-2xl shadow-sm border border-slate-100 hover:shadow-lg transition-all duration-300 overflow-hidden flex flex-col relative group cursor-pointer text-slate-800 hover:text-slate-800 no-underline">
+        {site.isDuplicate === 'はい' && <span className="absolute top-2 left-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full z-10 shadow font-bold">重複</span>}
+        <div className="h-40 bg-slate-200 relative overflow-hidden shrink-0">
+          <ThumbnailImage src={site.imageUrl} size="large" />
+          <div className="absolute inset-0 bg-slate-900/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+        </div>
+        <div className="p-4 flex-1 flex flex-col">
+          <div className="flex flex-wrap gap-2 mb-2">
+            <BadgeList str={site.subject} type="subject" />
+            <BadgeList str={site.grade} type="grade" />
+          </div>
+          <h3 className="font-bold text-slate-800 leading-tight mb-1 line-clamp-2 group-hover:text-app-600 transition-colors">{site.title}</h3>
+          {site.memo && <p className="text-xs text-slate-500 line-clamp-2 mb-2 leading-relaxed">{site.memo}</p>}
+          
+          <div className="mt-auto flex justify-end items-center pt-3 border-t border-slate-50">
+            <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); openEdit(site); }} className="p-2 text-slate-400 hover:text-slate-700 bg-slate-50 hover:bg-slate-100 rounded-full transition-colors z-20 relative">
+              <span className="material-symbols-rounded text-xl">edit</span>
+            </button>
+          </div>
+        </div>
+      </a>
+    ));
+
+    const SiteList = memo(({ site, openEdit }) => (
+      <a href={site.url} target="_blank" rel="noopener noreferrer" className="block bg-white rounded-xl shadow-sm border border-slate-100 p-3 mb-2 flex items-center gap-4 hover:border-app-300 transition-colors group cursor-pointer text-slate-800 hover:text-slate-800 no-underline">
+        <div className="w-16 h-16 rounded-lg bg-slate-200 flex-shrink-0 overflow-hidden relative">
+           <ThumbnailImage src={site.imageUrl} size="small" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <h3 className="font-bold text-slate-800 truncate group-hover:text-app-600 transition-colors">{site.title}</h3>
+          <p className="text-xs text-slate-400 truncate mt-0.5 mb-1">{site.url}</p>
+          <div className="flex flex-wrap gap-1">
+            <BadgeList str={site.subject} type="subject" />
+            <BadgeList str={site.grade} type="grade" />
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); openEdit(site); }} className="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-full transition-colors z-20 relative">
+            <span className="material-symbols-rounded text-xl">edit</span>
+          </button>
+        </div>
+      </a>
+    ));
+
+    const App = () => {
+      const [sites, setSites] = useState([]);
+      const [viewMode, setViewMode] = useState('card');
+      
+      const [searchQuery, setSearchQuery] = useState('');
+      const debouncedSearchQuery = useDebounce(searchQuery, 300); 
+      
+      const [filterSubj, setFilterSubj] = useState('');
+      const [filterGrade, setFilterGrade] = useState('');
+      
+      const [loading, setLoading] = useState(true);
+      const [toast, setToast] = useState({ msg: '', type: '', visible: false });
+      
+      const [isModalOpen, setModalOpen] = useState(false);
+      const [editData, setEditData] = useState(null);
+      const [inputUrls, setInputUrls] = useState('');
+      const [isAnalyzing, setIsAnalyzing] = useState(false);
+      const [draftSites, setDraftSites] = useState([]);
+      const [deleteConfirmId, setDeleteConfirmId] = useState(null);
+
+      const subjectsList = ["国語", "算数", "理科", "社会", "英語", "生活", "道徳", "音楽", "図工", "家庭科", "総合", "学活", "体育", "情報", "その他"];
+      const gradesListForEdit = ["低学年", "中学年", "高学年", "特支", "全学年", "教員用"];
+      const gradesListForFilter = ["低学年", "中学年", "高学年", "特支", "教員用"];
+
+      useEffect(() => { loadData(); }, []);
+
+      useEffect(() => {
+        if (isModalOpen) {
+          const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+          document.body.style.overflow = 'hidden';
+          document.body.style.paddingRight = `${scrollbarWidth}px`;
+        } else {
+          document.body.style.overflow = '';
+          document.body.style.paddingRight = '';
+        }
+        return () => {
+          document.body.style.overflow = '';
+          document.body.style.paddingRight = '';
+        };
+      }, [isModalOpen]);
+
+      const loadData = async () => {
+        setLoading(true);
+        try {
+          const data = await runGAS('getSites');
+          setSites(data || []);
+        } catch (e) {
+          showToast('データの読み込みに失敗しました', 'error');
+          setSites([]);
+        }
+        setLoading(false);
+      };
+
+      const showToast = (msg, type = 'success') => {
+        setToast({ msg, type, visible: true });
+        if (type !== 'loading') {
+          setTimeout(() => setToast(t => ({ ...t, visible: false })), 3000);
+        }
+      };
+
+      const closeModal = () => {
+        setModalOpen(false);
+        setEditData(null);
+        setDraftSites([]);
+        setInputUrls('');
+        setDeleteConfirmId(null);
+      };
+
+      const openEdit = useCallback((site) => {
+        setEditData({...site});
+        setModalOpen(true);
+      }, []);
+
+      const filteredSites = useMemo(() => {
+        return (sites || []).filter(s => {
+          if (filterSubj && (!s.subject || !s.subject.includes(filterSubj))) return false;
+          if (filterGrade) {
+            if (!s.grade) return false;
+            const siteGrades = s.grade.split(',');
+            let match = siteGrades.includes(filterGrade);
+            if (!match && ['低学年', '中学年', '高学年', '特支'].includes(filterGrade)) {
+              match = siteGrades.includes('全学年');
+            }
+            if (!match) return false;
+          }
+          if (debouncedSearchQuery) {
+            const q = debouncedSearchQuery.toLowerCase();
+            const textToSearch = `${s.title} ${s.url} ${s.memo} ${s.author} ${s.subject} ${s.grade}`.toLowerCase();
+            if (!textToSearch.includes(q)) return false;
+          }
+          return true;
+        });
+      }, [sites, filterSubj, filterGrade, debouncedSearchQuery]);
+
+      const handleAnalyzeUrl = async () => {
+        if (!inputUrls.trim()) return;
+        setIsAnalyzing(true);
+        showToast('サイト情報を取得中...', 'loading');
+        
+        const urls = inputUrls.split('\n').filter(u => u.trim());
+        try {
+          const results = await runGAS('fetchUrlInfo', urls);
+          setDraftSites(results);
+          showToast('取得完了！', 'success');
+        } catch (e) {
+          showToast('取得に失敗しました', 'error');
+        }
+        setIsAnalyzing(false);
+      };
+
+      const handleReanalyze = async () => {
+        if (!editData || !editData.url) return;
+        setIsAnalyzing(true);
+        showToast('最新情報を取得中...', 'loading');
+        try {
+          const results = await runGAS('fetchUrlInfo', [editData.url]);
+          if (results && results.length > 0) {
+            const newData = results[0];
+            setEditData(prev => ({
+              ...prev,
+              title: newData.title,
+              imageUrl: newData.imageUrl,
+              memo: newData.memo
+            }));
+            showToast('最新情報に更新しました！', 'success');
+          } else {
+            showToast('情報の取得に失敗しました', 'error');
+          }
+        } catch (e) {
+          showToast('情報の取得に失敗しました', 'error');
+        }
+        setIsAnalyzing(false);
+      };
+
+      const handleSave = async (dataToSave) => {
+        showToast('保存中...', 'loading');
+        try {
+          const newSites = await runGAS('saveSites', Array.isArray(dataToSave) ? dataToSave : [dataToSave]);
+          setSites(newSites || []);
+          closeModal();
+          showToast('保存しました！', 'success');
+        } catch (e) {
+          showToast('保存に失敗しました', 'error');
+        }
+      };
+
+      const handleDelete = async (id) => {
+        showToast('削除中...', 'loading');
+        try {
+          const newSites = await runGAS('deleteSite', id);
+          setSites(newSites || []);
+          closeModal();
+          showToast('削除しました', 'success');
+        } catch (e) {
+          showToast('削除に失敗しました', 'error');
+        }
+      };
+
+      return (
+        <div className="min-h-screen px-4 max-w-5xl mx-auto flex flex-col">
+          <Header viewMode={viewMode} setViewMode={setViewMode} />
+          <Toast message={toast.msg} type={toast.type} isVisible={toast.visible} />
+
+          <div className="py-4 space-y-3 sticky top-16 z-30 bg-slate-50/90 backdrop-blur-md pb-2 border-b border-slate-200/50">
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 transform -translate-y-1/2 material-symbols-rounded text-slate-400 text-xl">search</span>
+              <input 
+                type="text" 
+                placeholder="サイト名、URL、キーワードで検索..." 
+                className="w-full pl-10 pr-10 py-3 bg-white border border-slate-200 rounded-2xl shadow-sm focus:outline-none focus:ring-2 focus:ring-app-500 focus:border-transparent transition-all"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+              {searchQuery && (
+                <button onClick={() => setSearchQuery('')} className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600 bg-slate-100 rounded-full p-0.5 transition-colors">
+                  <span className="material-symbols-rounded text-sm">close</span>
+                </button>
+              )}
+            </div>
+            
+            <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
+              <select className="px-4 py-2 bg-white rounded-full shadow-sm border border-slate-200 text-sm font-bold text-slate-600 outline-none focus:ring-2 focus:ring-app-500 flex-shrink-0" value={filterSubj} onChange={e=>setFilterSubj(e.target.value)}>
+                <option value="">全ての教科</option>
+                {subjectsList.map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
+              
+              <select className="px-4 py-2 bg-white rounded-full shadow-sm border border-slate-200 text-sm font-bold text-slate-600 outline-none focus:ring-2 focus:ring-app-500 flex-shrink-0" value={filterGrade} onChange={e=>setFilterGrade(e.target.value)}>
+                <option value="">全ての学年</option>
+                {gradesListForFilter.map(g => <option key={g} value={g}>{g}</option>)}
+              </select>
+            </div>
+          </div>
+
+          <div className="flex-1 mt-2 mb-8">
+            {loading ? (
+               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 animate-pulse">
+                  {[1,2,3,4,5,6,7,8].map(i => <div key={i} className="bg-slate-200 rounded-2xl h-[280px]"></div>)}
+               </div>
+            ) : filteredSites.length === 0 ? (
+              <div className="text-center py-24 text-slate-400 bg-white rounded-3xl border border-slate-100 border-dashed mt-4">
+                <span className="material-symbols-rounded text-[80px] mx-auto mb-4 text-slate-300 block">search_off</span>
+                <p className="font-bold text-lg text-slate-500">見つかりませんでした</p>
+                <p className="text-sm mt-1">キーワードを変えるか、新しく登録してください</p>
+              </div>
+            ) : (
+              <div className={viewMode === 'card' ? "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4" : "flex flex-col"}>
+                {filteredSites.map((site, i) => viewMode === 'card' ? 
+                  <SiteCard key={site.id || i} site={site} openEdit={openEdit} /> : 
+                  <SiteList key={site.id || i} site={site} openEdit={openEdit} />
+                )}
+              </div>
+            )}
+          </div>
+
+          <button 
+            onClick={() => { closeModal(); setModalOpen(true); }}
+            className="fixed bottom-20 right-4 w-14 h-14 bg-app-500 text-white rounded-full shadow-lg hover:shadow-xl hover:bg-app-600 hover:scale-105 transition-all flex items-center justify-center z-40">
+            <span className="material-symbols-rounded text-3xl">add</span>
+          </button>
+
+          {isModalOpen && (
+            <div 
+              className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex justify-center items-end sm:items-center"
+            >
+              <div 
+                className="bg-white w-full sm:w-[650px] max-h-[90vh] rounded-t-3xl sm:rounded-3xl shadow-2xl flex flex-col animate-[slideUp_0.3s_ease-out] overflow-hidden"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-white shrink-0">
+                  <h2 className="text-lg font-bold text-slate-800">{editData ? 'サイト情報の編集' : 'サイトの一括登録'}</h2>
+                  <button onClick={closeModal} className="p-2 bg-slate-100 hover:bg-slate-200 rounded-full text-slate-500 transition-colors flex items-center justify-center"><span className="material-symbols-rounded text-xl">close</span></button>
+                </div>
+                
+                <div className="p-5 overflow-y-auto flex-1 bg-slate-50/50">
+                  {!editData && draftSites.length === 0 ? (
+                    <div className="space-y-4">
+                      <div className="bg-app-50 border border-app-100 p-4 rounded-2xl flex gap-3 text-app-700">
+                        <span className="material-symbols-rounded text-app-500 shrink-0">tips_and_updates</span>
+                        <p className="text-sm leading-relaxed font-medium">登録したいURLを貼り付けてください。<br/>改行すれば<strong className="text-app-600">複数サイトも一気に</strong>情報を取得します。</p>
+                      </div>
+                      <textarea 
+                        className="w-full h-40 p-4 border border-slate-200 rounded-2xl bg-white shadow-inner focus:bg-white focus:ring-2 focus:ring-app-500 outline-none transition-colors text-sm" 
+                        placeholder="https://..." 
+                        value={inputUrls} onChange={e => setInputUrls(e.target.value)}></textarea>
+                      <button 
+                        onClick={handleAnalyzeUrl} disabled={isAnalyzing || !inputUrls}
+                        className="w-full py-4 bg-slate-800 hover:bg-slate-900 text-white rounded-2xl font-bold flex items-center justify-center gap-2 disabled:opacity-50 transition-colors shadow-md">
+                        {isAnalyzing ? <span className="material-symbols-rounded text-xl animate-spin">autorenew</span> : <span className="material-symbols-rounded text-xl">search</span>}
+                        {isAnalyzing ? 'サイト情報を取得中...' : 'サイト情報を取得する'}
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="space-y-6">
+                      {(editData ? [editData] : draftSites).map((site, index) => (
+                        <div key={index} className="bg-white p-5 rounded-2xl space-y-5 border border-slate-200 shadow-sm relative">
+                          
+                          {editData && (
+                            <div className="flex items-center justify-between mb-2 bg-slate-50 p-3 rounded-xl border border-slate-200">
+                              <div className="text-xs text-slate-500 truncate flex-1 mr-4">
+                                <span className="font-bold text-slate-700 block mb-0.5">登録されているURL</span>
+                                {site.url}
+                              </div>
+                              <button 
+                                onClick={handleReanalyze} disabled={isAnalyzing}
+                                className="shrink-0 px-3 py-2 bg-white hover:bg-app-50 text-app-600 border border-slate-200 hover:border-app-300 rounded-lg font-bold flex items-center justify-center gap-1.5 disabled:opacity-50 transition-colors text-xs shadow-sm">
+                                {isAnalyzing ? <span className="material-symbols-rounded text-sm animate-spin">autorenew</span> : <span className="material-symbols-rounded text-sm">sync</span>}
+                                {isAnalyzing ? '取得中...' : '情報を再取得'}
+                              </button>
+                            </div>
+                          )}
+
+                          <div>
+                            <label className="text-xs font-bold text-slate-500 ml-1 mb-1 block">サイト名</label>
+                            <input type="text" className="w-full p-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-app-500 outline-none font-bold text-slate-800 transition-all" 
+                              value={site.title} onChange={e => {
+                                const val = e.target.value;
+                                if(editData) setEditData({...site, title: val});
+                                else { const newD = [...draftSites]; newD[index].title = val; setDraftSites(newD); }
+                              }} />
+                          </div>
+                          
+                          <div>
+                            <label className="text-xs font-bold text-slate-500 ml-1 mb-1 block">教科（複数選択可）</label>
+                            <MultiSelectTags 
+                              options={subjectsList} selectedString={site.subject} type="subject"
+                              onChange={(newVal) => {
+                                if(editData) setEditData({...site, subject: newVal});
+                                else { const newD = [...draftSites]; newD[index].subject = newVal; setDraftSites(newD); }
+                              }} 
+                            />
+                          </div>
+                          <div>
+                            <label className="text-xs font-bold text-slate-500 ml-1 mb-1 block">学年（複数選択可）</label>
+                            <MultiSelectTags 
+                              options={gradesListForEdit} selectedString={site.grade} type="grade"
+                              onChange={(newVal) => {
+                                if(editData) setEditData({...site, grade: newVal});
+                                else { const newD = [...draftSites]; newD[index].grade = newVal; setDraftSites(newD); }
+                              }} 
+                            />
+                          </div>
+
+                          <div className="border-t border-slate-100 pt-4">
+                            <label className="text-xs font-bold text-slate-500 ml-1 mb-1 block flex items-center gap-1"><span className="material-symbols-rounded text-[14px]">description</span> 備考・概要</label>
+                            <textarea className="w-full h-20 p-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-app-500 outline-none text-sm leading-relaxed" 
+                              placeholder="サイトの概要や使いどころなど" value={site.memo} onChange={e => {
+                              if(editData) setEditData({...site, memo: e.target.value});
+                              else { const newD = [...draftSites]; newD[index].memo = e.target.value; setDraftSites(newD); }
+                            }}></textarea>
+                          </div>
+
+                          <div className="flex gap-4 border-t border-slate-100 pt-4">
+                            <div className="flex-1">
+                              <label className="text-xs font-bold text-slate-500 ml-1 mb-1 block">動作確認状況</label>
+                              <div className="flex gap-2">
+                                 {[{k:'cbStudent', l:'児童CB'}, {k:'cbTeacher', l:'教員CB'}, {k:'pcStaff', l:'職員PC'}].map(item => (
+                                   <div key={item.k} className="flex-1">
+                                     <div className="text-[10px] text-center text-slate-400 mb-1">{item.l}</div>
+                                     <select className="w-full p-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-app-500 text-sm font-bold text-center appearance-none" value={site[item.k]} onChange={e => {
+                                        const val = e.target.value;
+                                        if(editData) setEditData({...site, [item.k]: val});
+                                        else { const newD = [...draftSites]; newD[index][item.k] = val; setDraftSites(newD); }
+                                      }}>
+                                       <option>〇</option><option>△</option><option>×</option>
+                                     </select>
+                                   </div>
+                                 ))}
+                              </div>
+                            </div>
+                            <div className="w-32">
+                              <label className="text-xs font-bold text-slate-500 ml-1 mb-1 block">登録者</label>
+                              <input type="text" className="w-full p-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-app-500 outline-none text-sm font-bold mt-4" value={site.author || ''} onChange={e => {
+                                if(editData) setEditData({...site, author: e.target.value});
+                                else { const newD = [...draftSites]; newD[index].author = e.target.value; setDraftSites(newD); }
+                              }} />
+                            </div>
+                          </div>
+                          
+                          {!editData && <div className="text-[10px] text-slate-400 truncate mt-2 px-1">URL: {site.url}</div>}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                
+                {(editData || draftSites.length > 0) && (
+                  <div className="p-4 bg-white border-t border-slate-100 flex gap-3 flex-col-reverse sm:flex-row shrink-0">
+                    {editData && (
+                      <button 
+                        onClick={() => {
+                          if (deleteConfirmId === editData.id) handleDelete(editData.id);
+                          else { setDeleteConfirmId(editData.id); setTimeout(() => setDeleteConfirmId(null), 3000); }
+                        }}
+                        className={`py-3 px-6 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 sm:w-auto w-full ${
+                          deleteConfirmId === editData.id ? 'bg-red-500 text-white shadow-md hover:bg-red-600 animate-pulse' : 'bg-red-50 text-red-600 hover:bg-red-100'
+                        }`}>
+                        <span className="material-symbols-rounded text-xl">{deleteConfirmId === editData.id ? 'warning' : 'delete'}</span>
+                        <span className="whitespace-nowrap">{deleteConfirmId === editData.id ? '本当に削除しますか？' : '削除'}</span>
+                      </button>
+                    )}
+
+                    <button 
+                      onClick={() => handleSave(editData || draftSites)}
+                      className="flex-1 py-3 bg-app-500 text-white rounded-2xl font-bold shadow-md hover:bg-app-600 transition flex justify-center items-center gap-2">
+                      <span className="material-symbols-rounded text-xl">save</span>
+                      {editData ? '更新内容を保存する' : 'この内容で登録する'}
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          <footer className="fixed bottom-0 left-0 w-full z-40 bg-slate-100/90 backdrop-blur-md border-t border-slate-200 py-3">
+            <p className="text-center text-sm text-slate-500">
+              © 2026 学習サイトリンク集 <a href="https://note.com/cute_borage86" target="_blank" rel="noopener noreferrer" className="no-underline text-inherit font-bold hover:text-app-600 transition-colors">GIGA山</a>
+            </p>
+          </footer>
+        </div>
+      );
+    };
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>
