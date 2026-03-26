@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" type="image/svg+xml" href="icon.svg">
+  <title>GIGA-Linker Clipper</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  
+  <header class="header">
+    <div class="header-icon">
+      <span class="icon icon-lg">
+        <svg viewBox="0 0 24 24"><path d="M12 11.55C9.64 9.35 6.48 8 3 8v11c3.48 0 6.64 1.35 9 3.55 2.36-2.19 5.52-3.55 9-3.55V8c-3.48 0-6.64 1.35-9 3.55zM12 8c1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3 1.34 3 3 3z"/></svg>
+      </span>
+    </div>
+    <h1 class="header-title">GIGA-Linker Clipper</h1>
+  </header>
+
+  <div class="content">
+    
+    <!-- 設定エリア -->
+    <div class="config-card">
+      <label class="config-label">
+        <span class="icon icon-sm">
+          <svg viewBox="0 0 24 24"><path d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"/></svg>
+        </span>
+        WebアプリのURL (1回だけ設定)
+      </label>
+      <input type="text" id="gas-url-input" placeholder="https://script.google.com/macros/s/..." class="config-input">
+    </div>
+
+    <!-- ストックされたURLのリスト -->
+    <div class="list-section">
+      <div class="list-header">
+        <h2 class="list-title">
+          <span class="icon icon-md">
+            <svg viewBox="0 0 24 24"><path d="M19 5v14H5V5h14m1.1-2H3.9c-.5 0-.9.4-.9.9v16.2c0 .4.4.9.9.9h16.2c.4 0 .9-.5.9-.9V3.9c0-.5-.5-.9-.9-.9zM11 7h6v2h-6V7zm0 4h6v2h-6v-2zm0 4h6v2h-6v-2zM7 7h2v2H7V7zm0 4h2v2H7v-2zm0 4h2v2H7v-2z"/></svg>
+          </span>
+          送信待ちリスト
+        </h2>
+        <span id="count-badge" class="count-badge">0件</span>
+      </div>
+
+      <div id="site-list" class="site-list">
+        <!-- JSでここにリストが追加されます -->
+      </div>
+    </div>
+  </div>
+
+  <!-- アクションボタンエリア -->
+  <div class="footer">
+    <div id="status-msg" class="status-msg"></div>
+    <div class="action-row">
+      <button id="clear-btn" class="btn-clear">
+        <span class="icon icon-lg">
+          <svg viewBox="0 0 24 24"><path d="M15 16h4v2h-4v-2zm0-8h7v2h-7V8zm0 4h6v2h-6v-2zM3 18c0 1.1.9 2 2 2h6c1.1 0 2-.9 2-2V8H3v10zM14 5h-3.5l-1-1h-5l-1 1H0v2h14V5z"/></svg>
+        </span>
+      </button>
+      <button id="send-btn" class="btn-send">
+        <span class="icon icon-lg">
+          <svg viewBox="0 0 24 24"><path d="M19 9l1.25-2.75L23 5l-2.75-1.25L19 1l-1.25 2.75L15 5l2.75 1.25L19 9zm-7.5.5L9 4 6.5 9.5 1 12l5.5 2.5L9 20l2.5-5.5L17 12l-5.5-2.5zM19 15l-1.25 2.75L15 19l2.75 1.25L19 23l1.25-2.75L23 19l-2.75-1.25L19 15z"/></svg>
+        </span>
+        AIで一括登録する
+      </button>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

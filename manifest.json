@@ -1,0 +1,30 @@
+{
+  "manifest_version": 3,
+  "name": "GIGA-Linker Clipper",
+  "version": "1.0",
+  "description": "右クリックで学習サイトをストックし、AIで一括データベース登録します。",
+  "permissions": [
+    "contextMenus",
+    "storage",
+    "activeTab"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "icons": {
+    "16": "icon.svg",
+    "48": "icon.svg",
+    "128": "icon.svg"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "GIGA-Linkerに一括登録",
+    "default_icon": "icon.svg"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["icon.svg", "popup.css"],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}
