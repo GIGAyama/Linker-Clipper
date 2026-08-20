@@ -118,6 +118,26 @@ body {
   border-color: #22c55e;
 }
 
+/* 2つめ以降の項目。上の入力欄とくっつかないように間を空ける */
+.config-label-2nd {
+  margin-top: 10px;
+}
+
+/* 設定欄の下に出す短い説明。読めないと困る案内文なので、薄くしすぎない */
+.config-hint {
+  font-size: 10px;
+  line-height: 1.5;
+  color: #475569; /* slate-600 */
+  margin-top: 6px;
+}
+
+.config-hint code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  background: #f1f5f9;
+  border-radius: 4px;
+  padding: 0 3px;
+}
+
 /* --- リストセクション --- */
 .list-section {
   flex: 1;
