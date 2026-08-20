@@ -255,25 +255,86 @@ function fetchUrlInfo(urls) {
 // =========================================================================
 // 外部（Chrome拡張など）からのPOSTリクエストを受け取るWeb API窓口
 // =========================================================================
+/**
+ * ⚠️ ここは合言葉なしで誰でも叩ける窓口だった。
+ *
+ *    ウェブアプリの URL さえ知っていれば、まったく関係のない人が
+ *    好きなURLの配列を投げられた。すると fetchUrlInfo が
+ *    **このスクリプトの持ち主（先生）の権限で** UrlFetchApp.fetch を回す。
+ *      ・学校のネットワークから見えるページを、外の人が読み出せる（SSRF）
+ *      ・1件ごとに Gemini を呼ぶので、利用枠を他人に使い切られる
+ *      ・スプレッドシートにいくらでも行を足せる
+ *
+ *    スクリプトプロパティに置いた合言葉（CLIPPER_SHARED_SECRET）を
+ *    リクエストに入れてもらい、サーバー側で照らし合わせる形にした。
+ *    拡張の設定画面「あいことば」に同じ文字を入れる。
+ *
+ *    ＜合言葉の決め方＞
+ *      GAS エディタ →「プロジェクトの設定」→「スクリプト プロパティ」
+ *      名前: CLIPPER_SHARED_SECRET
+ *      値  : 推測されない長めの文字列（20文字以上をおすすめ）
+ *            例）エディタで Utilities.getUuid() を1回実行して出た値
+ */
+var CLIPPER_SECRET_KEY_ = 'CLIPPER_SHARED_SECRET';
+
+// 1回のリクエストで扱うURLの上限。
+// 1件ごとにページを取りに行き Gemini にも聞くので、多すぎると実行時間の上限
+// （6分）に当たって全部無駄になる。拡張側にも同じ上限がある。
+var MAX_URLS_PER_REQUEST_ = 20;
+
+/** 長さの違いで中身を当てられないよう、最後まで比べてから判定する */
+function secretMatches_(given, expected) {
+  if (typeof given !== 'string' || typeof expected !== 'string') return false;
+  if (given.length !== expected.length) return false;
+  var diff = 0;
+  for (var i = 0; i < given.length; i++) {
+    diff |= given.charCodeAt(i) ^ expected.charCodeAt(i);
+  }
+  return diff === 0;
+}
+
+function jsonOut_(obj) {
+  return ContentService.createTextOutput(JSON.stringify(obj))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
 function doPost(e) {
   try {
     if (!e || !e.postData || !e.postData.contents) throw new Error("データが送信されていません");
-    
+
     const payload = JSON.parse(e.postData.contents);
-    if (!payload.urls || payload.urls.length === 0) throw new Error("URLリストが空です");
-    
+
+    // --- 合言葉の確認。これを通らないものは、URLを1件も取りに行かない ---
+    const expected = PropertiesService.getScriptProperties().getProperty(CLIPPER_SECRET_KEY_);
+    if (!expected) {
+      // 未設定のまま公開されると、誰でも叩ける状態に逆戻りする。閉じておく。
+      throw new Error("受け取り口が未設定です。スクリプトプロパティ CLIPPER_SHARED_SECRET を設定してください。");
+    }
+    if (!secretMatches_(payload.secret, expected)) {
+      throw new Error("あいことばが違います。");
+    }
+
+    if (!payload.urls || !payload.urls.length) throw new Error("URLリストが空です");
+    if (payload.urls.length > MAX_URLS_PER_REQUEST_) {
+      throw new Error(`1回に送れるのは${MAX_URLS_PER_REQUEST_}件までです（${payload.urls.length}件届きました）`);
+    }
+
+    // http/https 以外は取りに行かない。念のための最後の一枚。
+    const urls = payload.urls
+      .map(u => String(u == null ? '' : u).trim())
+      .filter(u => /^https?:\/\//i.test(u));
+    if (urls.length === 0) throw new Error("http(s) で始まるURLがありません");
+
     // 超軽量化された関数で情報取得
-    const parsedSitesData = fetchUrlInfo(payload.urls);
+    const parsedSitesData = fetchUrlInfo(urls);
     saveSites(parsedSitesData);
-    
-    return ContentService.createTextOutput(JSON.stringify({ 
-      status: 'success', message: `${parsedSitesData.length}件のサイトを登録しました！` 
-    })).setMimeType(ContentService.MimeType.JSON);
-    
+
+    return jsonOut_({
+      status: 'success', message: `${parsedSitesData.length}件のサイトを登録しました！`
+    });
+
   } catch (error) {
     console.error("doPostエラー:", error);
-    return ContentService.createTextOutput(JSON.stringify({ 
-      status: 'error', message: error.toString() 
-    })).setMimeType(ContentService.MimeType.JSON);
+    return jsonOut_({ status: 'error', message: error.toString() });
   }
 }
