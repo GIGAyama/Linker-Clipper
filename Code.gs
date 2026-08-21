@@ -118,7 +118,8 @@ function analyzeWithGemini(url, title, description) {
 - memoは教員がサイトの内容を素早く把握できる端的な説明にしてください
 - 純粋なJSONのみ出力してください`;
 
-    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+    // API キーは URL クエリに入れない（アクセスログやプロキシに残る）。ヘッダで渡す。
+    const endpoint = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
     const payload = {
       contents: [{ parts: [{ text: prompt }] }],
       generationConfig: {
@@ -130,6 +131,7 @@ function analyzeWithGemini(url, title, description) {
     const response = UrlFetchApp.fetch(endpoint, {
       method: 'post',
       contentType: 'application/json',
+      headers: { 'x-goog-api-key': apiKey },
       payload: JSON.stringify(payload),
       muteHttpExceptions: true
     });
