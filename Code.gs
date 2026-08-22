@@ -118,45 +118,15 @@ function analyzeWithGemini(url, title, description) {
 - memoは教員がサイトの内容を素早く把握できる端的な説明にしてください
 - 純粋なJSONのみ出力してください`;
 
-    // API キーは URL クエリに入れない（アクセスログやプロキシに残る）。ヘッダで渡す。
-    const endpoint = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
-    const payload = {
-      contents: [{ parts: [{ text: prompt }] }],
-      generationConfig: {
-        temperature: 0.1,
-        maxOutputTokens: 256
-      }
-    };
-
-    const response = UrlFetchApp.fetch(endpoint, {
-      method: 'post',
-      contentType: 'application/json',
-      headers: { 'x-goog-api-key': apiKey },
-      payload: JSON.stringify(payload),
-      muteHttpExceptions: true
+    // 呼び出しの作法（ヘッダでキーを渡す・429/5xx の再試行・空応答を成功に
+    // しない・コードフェンスつき JSON の取り出し）は正本 Gemini.gs に集約した。
+    // 分類は失敗しても手で選び直せるので、ここでは例外を握って fallback に落とす。
+    const parsed = GigaGemini.callJson({
+      apiKey: apiKey,
+      prompt: prompt,
+      model: 'gemini-2.0-flash',
+      generationConfig: { temperature: 0.1, maxOutputTokens: 256, responseMimeType: 'application/json' },
     });
-
-    const statusCode = response.getResponseCode();
-    if (statusCode !== 200) {
-      console.log(`Gemini APIエラー (HTTP ${statusCode}):`, response.getContentText());
-      return fallback;
-    }
-
-    const result = JSON.parse(response.getContentText());
-    const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (!text) {
-      console.log('Gemini応答にテキストなし');
-      return fallback;
-    }
-
-    // JSONブロックを抽出（```json ... ``` でラップされている場合にも対応）
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) {
-      console.log('Gemini応答からJSON抽出失敗:', text);
-      return fallback;
-    }
-
-    const parsed = JSON.parse(jsonMatch[0]);
 
     // 各フィールドのバリデーション
     const validSubjects = ['国語','算数','理科','社会','英語','生活','道徳','音楽','図工','家庭科','総合','学活','体育','情報','その他'];
