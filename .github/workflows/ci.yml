@@ -1,0 +1,54 @@
+# =====================================================================
+# ci.yml — このリポジトリの最低限の点検
+# =====================================================================
+# このリポジトリはビルドもテストも持たない（GAS のコードと Chrome 拡張の
+# 素の JS だけ）。それでも次の2つは機械で見ておきたい:
+#
+#   1. syntax — .gs / .js が構文として壊れていないか。GAS は貼り付けて
+#      保存するまで誤りに気づけないので、ここで先に落とす。
+#   2. drift  — Gemini.gs が正本（GIGAyama.github.io/standards/gas/）から
+#      ずれていないか。正本を直したのにこのコピーだけ古いまま、を防ぐ。
+#      実際に一度これが起きている（正本に Retry-After 対応が入った際）。
+# =====================================================================
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  syntax:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: .gs / .js の構文検査
+        run: |
+          set -e
+          fail=0
+          # node は .gs 拡張子を知らないので、.js として写してから見る
+          for f in *.gs; do
+            [ -e "$f" ] || continue
+            cp "$f" "/tmp/$(basename "$f").js"
+            node --check "/tmp/$(basename "$f").js" || fail=1
+          done
+          for f in *.js; do
+            [ -e "$f" ] || continue
+            node --check "$f" || fail=1
+          done
+          exit $fail
+
+  drift:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: GIGAyama/GIGAyama.github.io
+          path: .standards-src
+      - name: 正本とのずれ検知
+        run: node .standards-src/standards/check-drift.mjs --standards .standards-src/standards
