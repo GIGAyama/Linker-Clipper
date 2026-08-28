@@ -1,0 +1,15 @@
+{
+  "//": "Chrome 拡張（popup）の書体。作り直すには npm run build:fonts（ネットが要る）。拡張は自分のファイルとして配れるので、data: URI ではなく woff2 のファイルとして置く",
+  "//1": "⚠️ Manifest V3 は外部からのコード読み込みを禁じている。popup.css の @import は Zero-CDN 以前に拡張の規約違反だった",
+  "family": "Noto Sans JP",
+  "weights": [400, 700],
+  "grades": [1, 2],
+  "scan": ["popup.html", "popup.js", "popup.css"],
+  "scanExt": [".html", ".js", ".css"],
+  "outDir": "fonts",
+  "cssPath": "fonts.css",
+  "hrefPrefix": "./fonts/",
+  "generator": "tools/fonts/build-fonts.mjs",
+  "license": "Noto Sans JP — SIL Open Font License 1.1（全文は fonts/OFL.txt）",
+  "copyright": "Copyright 2014-2021 Adobe (http://www.adobe.com/)"
+}

@@ -2,6 +2,20 @@
 // バックエンド (GAS) - 超軽量・絶対安定版
 // ==========================================
 
+/**
+ * index.html の <?!= include_('x'); ?> が呼ぶ。x.html の中身をそのまま返す。
+ *
+ * ⚠️ 名前の末尾に _ を付けること。付けないと google.script.run から誰でも
+ *    呼べる公開エンドポイントになる。
+ * ⚠️ getRawContent() を使うこと。createHtmlOutputFromFile(...).getContent() は
+ *    中身を HTML として読み直して組み立て直すので、app.html のように
+ *    「JavaScript の中に HTML の断片を組み立てる文字列がある」ファイルが壊れる
+ *    （Reflection_Journal で 2026-08-24 に実際に起きている）。
+ */
+function include_(filename) {
+  return HtmlService.createTemplateFromFile(filename).getRawContent();
+}
+
 function doGet() {
   return HtmlService.createTemplateFromFile('index').evaluate()
     .setTitle('学習サイトリンク集')
