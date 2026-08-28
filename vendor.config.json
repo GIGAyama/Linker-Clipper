@@ -1,0 +1,33 @@
+{
+  "//": "アイコンの取りこみ方。作り直すには npm run build。Material Symbols は合字の書体としても配れるが、そちらは「その字で綴れる絵ぜんぶ」が返ってきて 289KB になる（実測）。使っている分の SVG だけを取り出す",
+  "generator": "tools/vendor/build-vendor.mjs",
+  "wrap": true,
+  "scan": [
+    "src",
+    "index.html",
+    "popup.html",
+    "popup.js"
+  ],
+  "scanExt": [
+    ".jsx",
+    ".html",
+    ".js"
+  ],
+  "targets": [
+    {
+      "out": "icons.html",
+      "icons": "@material-symbols/svg-400",
+      "extra": [
+        "view_list",
+        "grid_view",
+        "warning",
+        "delete"
+      ],
+      "//": "extra は実行時に決まるアイコン。src/app.jsx で ms-${…} と書いている分は走査では見つからないので、ここに並べる",
+      "alias": {
+        "tips_and_updates": "lightbulb"
+      },
+      "//alias": "tips_and_updates は @material-symbols/svg-400 0.36.1 に入っていない（7,474 個あるが無い）。いちばん近い lightbulb に当てる。クラス名は画面が書いているままにするので、src/app.jsx は直さなくてよい"
+    }
+  ]
+}

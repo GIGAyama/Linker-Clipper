@@ -1,0 +1,683 @@
+<!-- 生成物。手で編集しない（原本は src/app.jsx） -->
+<script>
+const {
+  useState,
+  useEffect,
+  useMemo,
+  useCallback,
+  memo
+} = React;
+const runGAS = (funcName, ...args) => {
+  return new Promise((resolve, reject) => {
+    google.script.run.withSuccessHandler(resolve).withFailureHandler(reject)[funcName](...args);
+  });
+};
+const useDebounce = (value, delay) => {
+  const [debouncedValue, setDebouncedValue] = useState(value);
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [value, delay]);
+  return debouncedValue;
+};
+const Toast = ({
+  message,
+  type,
+  isVisible
+}) => React.createElement("div", {
+  className: `fixed bottom-20 left-1/2 transform -translate-x-1/2 z-[60] transition-all duration-300 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'}`
+}, React.createElement("div", {
+  className: `px-6 py-3 rounded-full shadow-lg font-bold text-white flex items-center gap-2 ${type === 'error' ? 'bg-red-500' : 'bg-slate-800'}`
+}, type === 'success' && React.createElement("span", {
+  className: "ms ms-check_circle text-xl",
+  "aria-hidden": "true"
+}), type === 'loading' && React.createElement("span", {
+  className: "ms ms-autorenew text-xl animate-spin",
+  "aria-hidden": "true"
+}), React.createElement("span", null, message)));
+const ThumbnailImage = ({
+  src,
+  size = 'large'
+}) => {
+  const [error, setError] = useState(false);
+  if (!src || error) {
+    return React.createElement("div", {
+      className: "w-full h-full flex flex-col items-center justify-center bg-slate-100 text-slate-400"
+    }, React.createElement("span", {
+      className: `ms ms-image ${size === 'small' ? 'text-2xl' : 'text-3xl mb-2'}`,
+      "aria-hidden": "true"
+    }), size === 'large' && React.createElement("span", {
+      className: "text-xs font-bold"
+    }, "No Image"));
+  }
+  return React.createElement("img", {
+    src: src,
+    alt: "\u30B5\u30E0\u30CD\u30A4\u30EB",
+    loading: "lazy",
+    decoding: "async",
+    className: "w-full h-full object-cover transition-opacity duration-300",
+    onError: () => setError(true)
+  });
+};
+const MultiSelectTags = ({
+  options,
+  selectedString,
+  onChange,
+  type = "subject"
+}) => {
+  const selectedArr = selectedString ? selectedString.split(',').filter(s => s) : [];
+  const toggle = opt => {
+    let newArr = [...selectedArr];
+    if (selectedArr.includes(opt)) {
+      newArr = newArr.filter(s => s !== opt);
+    } else {
+      newArr.push(opt);
+      if (type === 'grade') {
+        if (opt === '全学年') {
+          newArr = newArr.filter(s => !['低学年', '中学年', '高学年', '特支'].includes(s));
+        } else if (['低学年', '中学年', '高学年', '特支'].includes(opt)) {
+          newArr = newArr.filter(s => s !== '全学年');
+        }
+      }
+    }
+    onChange(newArr.join(','));
+  };
+  return React.createElement("div", {
+    className: "flex flex-wrap gap-2 mt-1"
+  }, options.map(opt => {
+    const isSelected = selectedArr.includes(opt);
+    return React.createElement("button", {
+      key: opt,
+      type: "button",
+      onClick: () => toggle(opt),
+      className: `px-3 py-1.5 text-[11px] font-bold rounded-full border transition-all ${isSelected ? type === 'subject' ? 'bg-app-500 text-white border-app-500 shadow-sm' : 'bg-slate-700 text-white border-slate-700 shadow-sm' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'}`
+    }, opt);
+  }));
+};
+const BadgeList = ({
+  str,
+  type
+}) => {
+  const arr = str ? str.split(',').filter(s => s) : [];
+  if (arr.length === 0) return null;
+  return React.createElement("div", {
+    className: "flex flex-wrap gap-1"
+  }, arr.map((item, i) => React.createElement("span", {
+    key: i,
+    className: `text-[10px] font-bold px-2 py-0.5 rounded-full ${type === 'subject' ? 'bg-app-50 text-app-600' : 'bg-slate-100 text-slate-600'}`
+  }, item)));
+};
+const Header = memo(({
+  viewMode,
+  setViewMode
+}) => React.createElement("header", {
+  className: "fixed top-0 left-0 w-full z-40 glass shadow-sm px-4 h-16 flex items-center justify-between"
+}, React.createElement("div", {
+  className: "flex items-center gap-2"
+}, React.createElement("div", {
+  className: "w-10 h-10 bg-app-500 rounded-xl flex items-center justify-center text-white shadow-sm"
+}, React.createElement("span", {
+  className: "ms ms-local_library text-2xl",
+  "aria-hidden": "true"
+})), React.createElement("h1", {
+  className: "text-xl font-bold text-slate-800 tracking-tight"
+}, "\u5B66\u7FD2\u30B5\u30A4\u30C8\u30EA\u30F3\u30AF\u96C6")), React.createElement("div", {
+  className: "flex gap-2"
+}, React.createElement("button", {
+  onClick: () => setViewMode(v => v === 'card' ? 'list' : 'card'),
+  className: "p-2 bg-slate-100 rounded-full hover:bg-slate-200 transition-colors"
+}, React.createElement("span", {
+  className: `ms ms-${viewMode === 'card' ? 'view_list' : 'grid_view'} text-xl text-slate-600`,
+  "aria-hidden": "true"
+})))));
+const SiteCard = memo(({
+  site,
+  openEdit
+}) => React.createElement("a", {
+  href: site.url,
+  target: "_blank",
+  rel: "noopener noreferrer",
+  className: "block bg-white rounded-2xl shadow-sm border border-slate-100 hover:shadow-lg transition-all duration-300 overflow-hidden flex flex-col relative group cursor-pointer text-slate-800 hover:text-slate-800 no-underline"
+}, site.isDuplicate === 'はい' && React.createElement("span", {
+  className: "absolute top-2 left-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full z-10 shadow font-bold"
+}, "\u91CD\u8907"), React.createElement("div", {
+  className: "h-40 bg-slate-200 relative overflow-hidden shrink-0"
+}, React.createElement(ThumbnailImage, {
+  src: site.imageUrl,
+  size: "large"
+}), React.createElement("div", {
+  className: "absolute inset-0 bg-slate-900/5 opacity-0 group-hover:opacity-100 transition-opacity"
+})), React.createElement("div", {
+  className: "p-4 flex-1 flex flex-col"
+}, React.createElement("div", {
+  className: "flex flex-wrap gap-2 mb-2"
+}, React.createElement(BadgeList, {
+  str: site.subject,
+  type: "subject"
+}), React.createElement(BadgeList, {
+  str: site.grade,
+  type: "grade"
+})), React.createElement("h3", {
+  className: "font-bold text-slate-800 leading-tight mb-1 line-clamp-2 group-hover:text-app-600 transition-colors"
+}, site.title), site.memo && React.createElement("p", {
+  className: "text-xs text-slate-500 line-clamp-2 mb-2 leading-relaxed"
+}, site.memo), React.createElement("div", {
+  className: "mt-auto flex justify-end items-center pt-3 border-t border-slate-50"
+}, React.createElement("button", {
+  onClick: e => {
+    e.preventDefault();
+    e.stopPropagation();
+    openEdit(site);
+  },
+  className: "p-2 text-slate-400 hover:text-slate-700 bg-slate-50 hover:bg-slate-100 rounded-full transition-colors z-20 relative"
+}, React.createElement("span", {
+  className: "ms ms-edit text-xl",
+  "aria-hidden": "true"
+}))))));
+const SiteList = memo(({
+  site,
+  openEdit
+}) => React.createElement("a", {
+  href: site.url,
+  target: "_blank",
+  rel: "noopener noreferrer",
+  className: "block bg-white rounded-xl shadow-sm border border-slate-100 p-3 mb-2 flex items-center gap-4 hover:border-app-300 transition-colors group cursor-pointer text-slate-800 hover:text-slate-800 no-underline"
+}, React.createElement("div", {
+  className: "w-16 h-16 rounded-lg bg-slate-200 flex-shrink-0 overflow-hidden relative"
+}, React.createElement(ThumbnailImage, {
+  src: site.imageUrl,
+  size: "small"
+})), React.createElement("div", {
+  className: "flex-1 min-w-0"
+}, React.createElement("h3", {
+  className: "font-bold text-slate-800 truncate group-hover:text-app-600 transition-colors"
+}, site.title), React.createElement("p", {
+  className: "text-xs text-slate-400 truncate mt-0.5 mb-1"
+}, site.url), React.createElement("div", {
+  className: "flex flex-wrap gap-1"
+}, React.createElement(BadgeList, {
+  str: site.subject,
+  type: "subject"
+}), React.createElement(BadgeList, {
+  str: site.grade,
+  type: "grade"
+}))), React.createElement("div", {
+  className: "flex items-center gap-2"
+}, React.createElement("button", {
+  onClick: e => {
+    e.preventDefault();
+    e.stopPropagation();
+    openEdit(site);
+  },
+  className: "p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-full transition-colors z-20 relative"
+}, React.createElement("span", {
+  className: "ms ms-edit text-xl",
+  "aria-hidden": "true"
+})))));
+const App = () => {
+  const [sites, setSites] = useState([]);
+  const [viewMode, setViewMode] = useState('card');
+  const [searchQuery, setSearchQuery] = useState('');
+  const debouncedSearchQuery = useDebounce(searchQuery, 300);
+  const [filterSubj, setFilterSubj] = useState('');
+  const [filterGrade, setFilterGrade] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [toast, setToast] = useState({
+    msg: '',
+    type: '',
+    visible: false
+  });
+  const [isModalOpen, setModalOpen] = useState(false);
+  const [editData, setEditData] = useState(null);
+  const [inputUrls, setInputUrls] = useState('');
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [draftSites, setDraftSites] = useState([]);
+  const [deleteConfirmId, setDeleteConfirmId] = useState(null);
+  const subjectsList = ["国語", "算数", "理科", "社会", "英語", "生活", "道徳", "音楽", "図工", "家庭科", "総合", "学活", "体育", "情報", "その他"];
+  const gradesListForEdit = ["低学年", "中学年", "高学年", "特支", "全学年", "教員用"];
+  const gradesListForFilter = ["低学年", "中学年", "高学年", "特支", "教員用"];
+  useEffect(() => {
+    loadData();
+  }, []);
+  useEffect(() => {
+    if (isModalOpen) {
+      const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+      document.body.style.overflow = 'hidden';
+      document.body.style.paddingRight = `${scrollbarWidth}px`;
+    } else {
+      document.body.style.overflow = '';
+      document.body.style.paddingRight = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+      document.body.style.paddingRight = '';
+    };
+  }, [isModalOpen]);
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      const data = await runGAS('getSites');
+      setSites(data || []);
+    } catch (e) {
+      showToast('データの読み込みに失敗しました', 'error');
+      setSites([]);
+    }
+    setLoading(false);
+  };
+  const showToast = (msg, type = 'success') => {
+    setToast({
+      msg,
+      type,
+      visible: true
+    });
+    if (type !== 'loading') {
+      setTimeout(() => setToast(t => ({
+        ...t,
+        visible: false
+      })), 3000);
+    }
+  };
+  const closeModal = () => {
+    setModalOpen(false);
+    setEditData(null);
+    setDraftSites([]);
+    setInputUrls('');
+    setDeleteConfirmId(null);
+  };
+  const openEdit = useCallback(site => {
+    setEditData({
+      ...site
+    });
+    setModalOpen(true);
+  }, []);
+  const filteredSites = useMemo(() => {
+    return (sites || []).filter(s => {
+      if (filterSubj && (!s.subject || !s.subject.includes(filterSubj))) return false;
+      if (filterGrade) {
+        if (!s.grade) return false;
+        const siteGrades = s.grade.split(',');
+        let match = siteGrades.includes(filterGrade);
+        if (!match && ['低学年', '中学年', '高学年', '特支'].includes(filterGrade)) {
+          match = siteGrades.includes('全学年');
+        }
+        if (!match) return false;
+      }
+      if (debouncedSearchQuery) {
+        const q = debouncedSearchQuery.toLowerCase();
+        const textToSearch = `${s.title} ${s.url} ${s.memo} ${s.author} ${s.subject} ${s.grade}`.toLowerCase();
+        if (!textToSearch.includes(q)) return false;
+      }
+      return true;
+    });
+  }, [sites, filterSubj, filterGrade, debouncedSearchQuery]);
+  const handleAnalyzeUrl = async () => {
+    if (!inputUrls.trim()) return;
+    setIsAnalyzing(true);
+    showToast('サイト情報を取得中...', 'loading');
+    const urls = inputUrls.split('\n').filter(u => u.trim());
+    try {
+      const results = await runGAS('fetchUrlInfo', urls);
+      setDraftSites(results);
+      showToast('取得完了！', 'success');
+    } catch (e) {
+      showToast('取得に失敗しました', 'error');
+    }
+    setIsAnalyzing(false);
+  };
+  const handleReanalyze = async () => {
+    if (!editData || !editData.url) return;
+    setIsAnalyzing(true);
+    showToast('最新情報を取得中...', 'loading');
+    try {
+      const results = await runGAS('fetchUrlInfo', [editData.url]);
+      if (results && results.length > 0) {
+        const newData = results[0];
+        setEditData(prev => ({
+          ...prev,
+          title: newData.title,
+          imageUrl: newData.imageUrl,
+          memo: newData.memo
+        }));
+        showToast('最新情報に更新しました！', 'success');
+      } else {
+        showToast('情報の取得に失敗しました', 'error');
+      }
+    } catch (e) {
+      showToast('情報の取得に失敗しました', 'error');
+    }
+    setIsAnalyzing(false);
+  };
+  const handleSave = async dataToSave => {
+    showToast('保存中...', 'loading');
+    try {
+      const newSites = await runGAS('saveSites', Array.isArray(dataToSave) ? dataToSave : [dataToSave]);
+      setSites(newSites || []);
+      closeModal();
+      showToast('保存しました！', 'success');
+    } catch (e) {
+      showToast('保存に失敗しました', 'error');
+    }
+  };
+  const handleDelete = async id => {
+    showToast('削除中...', 'loading');
+    try {
+      const newSites = await runGAS('deleteSite', id);
+      setSites(newSites || []);
+      closeModal();
+      showToast('削除しました', 'success');
+    } catch (e) {
+      showToast('削除に失敗しました', 'error');
+    }
+  };
+  return React.createElement("div", {
+    className: "min-h-screen px-4 max-w-5xl mx-auto flex flex-col"
+  }, React.createElement(Header, {
+    viewMode: viewMode,
+    setViewMode: setViewMode
+  }), React.createElement(Toast, {
+    message: toast.msg,
+    type: toast.type,
+    isVisible: toast.visible
+  }), React.createElement("div", {
+    className: "py-4 space-y-3 sticky top-16 z-30 bg-slate-50/90 backdrop-blur-md pb-2 border-b border-slate-200/50"
+  }, React.createElement("div", {
+    className: "relative"
+  }, React.createElement("span", {
+    className: "ms ms-search absolute left-3 top-1/2 transform -translate-y-1/2  text-slate-400 text-xl",
+    "aria-hidden": "true"
+  }), React.createElement("input", {
+    type: "text",
+    placeholder: "\u30B5\u30A4\u30C8\u540D\u3001URL\u3001\u30AD\u30FC\u30EF\u30FC\u30C9\u3067\u691C\u7D22...",
+    className: "w-full pl-10 pr-10 py-3 bg-white border border-slate-200 rounded-2xl shadow-sm focus:outline-none focus:ring-2 focus:ring-app-500 focus:border-transparent transition-all",
+    value: searchQuery,
+    onChange: e => setSearchQuery(e.target.value)
+  }), searchQuery && React.createElement("button", {
+    onClick: () => setSearchQuery(''),
+    className: "absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600 bg-slate-100 rounded-full p-0.5 transition-colors"
+  }, React.createElement("span", {
+    className: "ms ms-close text-sm",
+    "aria-hidden": "true"
+  }))), React.createElement("div", {
+    className: "flex gap-2 overflow-x-auto no-scrollbar pb-1"
+  }, React.createElement("select", {
+    className: "px-4 py-2 bg-white rounded-full shadow-sm border border-slate-200 text-sm font-bold text-slate-600 outline-none focus:ring-2 focus:ring-app-500 flex-shrink-0",
+    value: filterSubj,
+    onChange: e => setFilterSubj(e.target.value)
+  }, React.createElement("option", {
+    value: ""
+  }, "\u5168\u3066\u306E\u6559\u79D1"), subjectsList.map(s => React.createElement("option", {
+    key: s,
+    value: s
+  }, s))), React.createElement("select", {
+    className: "px-4 py-2 bg-white rounded-full shadow-sm border border-slate-200 text-sm font-bold text-slate-600 outline-none focus:ring-2 focus:ring-app-500 flex-shrink-0",
+    value: filterGrade,
+    onChange: e => setFilterGrade(e.target.value)
+  }, React.createElement("option", {
+    value: ""
+  }, "\u5168\u3066\u306E\u5B66\u5E74"), gradesListForFilter.map(g => React.createElement("option", {
+    key: g,
+    value: g
+  }, g))))), React.createElement("div", {
+    className: "flex-1 mt-2 mb-8"
+  }, loading ? React.createElement("div", {
+    className: "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 animate-pulse"
+  }, [1, 2, 3, 4, 5, 6, 7, 8].map(i => React.createElement("div", {
+    key: i,
+    className: "bg-slate-200 rounded-2xl h-[280px]"
+  }))) : filteredSites.length === 0 ? React.createElement("div", {
+    className: "text-center py-24 text-slate-400 bg-white rounded-3xl border border-slate-100 border-dashed mt-4"
+  }, React.createElement("span", {
+    className: "ms ms-search_off text-[80px] mx-auto mb-4 text-slate-300 block",
+    "aria-hidden": "true"
+  }), React.createElement("p", {
+    className: "font-bold text-lg text-slate-500"
+  }, "\u898B\u3064\u304B\u308A\u307E\u305B\u3093\u3067\u3057\u305F"), React.createElement("p", {
+    className: "text-sm mt-1"
+  }, "\u30AD\u30FC\u30EF\u30FC\u30C9\u3092\u5909\u3048\u308B\u304B\u3001\u65B0\u3057\u304F\u767B\u9332\u3057\u3066\u304F\u3060\u3055\u3044")) : React.createElement("div", {
+    className: viewMode === 'card' ? "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4" : "flex flex-col"
+  }, filteredSites.map((site, i) => viewMode === 'card' ? React.createElement(SiteCard, {
+    key: site.id || i,
+    site: site,
+    openEdit: openEdit
+  }) : React.createElement(SiteList, {
+    key: site.id || i,
+    site: site,
+    openEdit: openEdit
+  })))), React.createElement("button", {
+    onClick: () => {
+      closeModal();
+      setModalOpen(true);
+    },
+    className: "fixed bottom-20 right-4 w-14 h-14 bg-app-500 text-white rounded-full shadow-lg hover:shadow-xl hover:bg-app-600 hover:scale-105 transition-all flex items-center justify-center z-40"
+  }, React.createElement("span", {
+    className: "ms ms-add text-3xl",
+    "aria-hidden": "true"
+  })), isModalOpen && React.createElement("div", {
+    className: "fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex justify-center items-end sm:items-center"
+  }, React.createElement("div", {
+    className: "bg-white w-full sm:w-[650px] max-h-[90vh] rounded-t-3xl sm:rounded-3xl shadow-2xl flex flex-col animate-[slideUp_0.3s_ease-out] overflow-hidden",
+    onClick: e => e.stopPropagation()
+  }, React.createElement("div", {
+    className: "p-4 border-b border-slate-100 flex justify-between items-center bg-white shrink-0"
+  }, React.createElement("h2", {
+    className: "text-lg font-bold text-slate-800"
+  }, editData ? 'サイト情報の編集' : 'サイトの一括登録'), React.createElement("button", {
+    onClick: closeModal,
+    className: "p-2 bg-slate-100 hover:bg-slate-200 rounded-full text-slate-500 transition-colors flex items-center justify-center"
+  }, React.createElement("span", {
+    className: "ms ms-close text-xl",
+    "aria-hidden": "true"
+  }))), React.createElement("div", {
+    className: "p-5 overflow-y-auto flex-1 bg-slate-50/50"
+  }, !editData && draftSites.length === 0 ? React.createElement("div", {
+    className: "space-y-4"
+  }, React.createElement("div", {
+    className: "bg-app-50 border border-app-100 p-4 rounded-2xl flex gap-3 text-app-700"
+  }, React.createElement("span", {
+    className: "ms ms-tips_and_updates text-app-500 shrink-0",
+    "aria-hidden": "true"
+  }), React.createElement("p", {
+    className: "text-sm leading-relaxed font-medium"
+  }, "\u767B\u9332\u3057\u305F\u3044URL\u3092\u8CBC\u308A\u4ED8\u3051\u3066\u304F\u3060\u3055\u3044\u3002", React.createElement("br", null), "\u6539\u884C\u3059\u308C\u3070", React.createElement("strong", {
+    className: "text-app-600"
+  }, "\u8907\u6570\u30B5\u30A4\u30C8\u3082\u4E00\u6C17\u306B"), "\u60C5\u5831\u3092\u53D6\u5F97\u3057\u307E\u3059\u3002")), React.createElement("textarea", {
+    className: "w-full h-40 p-4 border border-slate-200 rounded-2xl bg-white shadow-inner focus:bg-white focus:ring-2 focus:ring-app-500 outline-none transition-colors text-sm",
+    placeholder: "https://...",
+    value: inputUrls,
+    onChange: e => setInputUrls(e.target.value)
+  }), React.createElement("button", {
+    onClick: handleAnalyzeUrl,
+    disabled: isAnalyzing || !inputUrls,
+    className: "w-full py-4 bg-slate-800 hover:bg-slate-900 text-white rounded-2xl font-bold flex items-center justify-center gap-2 disabled:opacity-50 transition-colors shadow-md"
+  }, isAnalyzing ? React.createElement("span", {
+    className: "ms ms-autorenew text-xl animate-spin",
+    "aria-hidden": "true"
+  }) : React.createElement("span", {
+    className: "ms ms-search text-xl",
+    "aria-hidden": "true"
+  }), isAnalyzing ? 'サイト情報を取得中...' : 'サイト情報を取得する')) : React.createElement("div", {
+    className: "space-y-6"
+  }, (editData ? [editData] : draftSites).map((site, index) => React.createElement("div", {
+    key: index,
+    className: "bg-white p-5 rounded-2xl space-y-5 border border-slate-200 shadow-sm relative"
+  }, editData && React.createElement("div", {
+    className: "flex items-center justify-between mb-2 bg-slate-50 p-3 rounded-xl border border-slate-200"
+  }, React.createElement("div", {
+    className: "text-xs text-slate-500 truncate flex-1 mr-4"
+  }, React.createElement("span", {
+    className: "font-bold text-slate-700 block mb-0.5"
+  }, "\u767B\u9332\u3055\u308C\u3066\u3044\u308BURL"), site.url), React.createElement("button", {
+    onClick: handleReanalyze,
+    disabled: isAnalyzing,
+    className: "shrink-0 px-3 py-2 bg-white hover:bg-app-50 text-app-600 border border-slate-200 hover:border-app-300 rounded-lg font-bold flex items-center justify-center gap-1.5 disabled:opacity-50 transition-colors text-xs shadow-sm"
+  }, isAnalyzing ? React.createElement("span", {
+    className: "ms ms-autorenew text-sm animate-spin",
+    "aria-hidden": "true"
+  }) : React.createElement("span", {
+    className: "ms ms-sync text-sm",
+    "aria-hidden": "true"
+  }), isAnalyzing ? '取得中...' : '情報を再取得')), React.createElement("div", null, React.createElement("label", {
+    className: "text-xs font-bold text-slate-500 ml-1 mb-1 block"
+  }, "\u30B5\u30A4\u30C8\u540D"), React.createElement("input", {
+    type: "text",
+    className: "w-full p-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-app-500 outline-none font-bold text-slate-800 transition-all",
+    value: site.title,
+    onChange: e => {
+      const val = e.target.value;
+      if (editData) setEditData({
+        ...site,
+        title: val
+      });else {
+        const newD = [...draftSites];
+        newD[index].title = val;
+        setDraftSites(newD);
+      }
+    }
+  })), React.createElement("div", null, React.createElement("label", {
+    className: "text-xs font-bold text-slate-500 ml-1 mb-1 block"
+  }, "\u6559\u79D1\uFF08\u8907\u6570\u9078\u629E\u53EF\uFF09"), React.createElement(MultiSelectTags, {
+    options: subjectsList,
+    selectedString: site.subject,
+    type: "subject",
+    onChange: newVal => {
+      if (editData) setEditData({
+        ...site,
+        subject: newVal
+      });else {
+        const newD = [...draftSites];
+        newD[index].subject = newVal;
+        setDraftSites(newD);
+      }
+    }
+  })), React.createElement("div", null, React.createElement("label", {
+    className: "text-xs font-bold text-slate-500 ml-1 mb-1 block"
+  }, "\u5B66\u5E74\uFF08\u8907\u6570\u9078\u629E\u53EF\uFF09"), React.createElement(MultiSelectTags, {
+    options: gradesListForEdit,
+    selectedString: site.grade,
+    type: "grade",
+    onChange: newVal => {
+      if (editData) setEditData({
+        ...site,
+        grade: newVal
+      });else {
+        const newD = [...draftSites];
+        newD[index].grade = newVal;
+        setDraftSites(newD);
+      }
+    }
+  })), React.createElement("div", {
+    className: "border-t border-slate-100 pt-4"
+  }, React.createElement("label", {
+    className: "text-xs font-bold text-slate-500 ml-1 mb-1 block flex items-center gap-1"
+  }, React.createElement("span", {
+    className: "ms ms-description text-[14px]",
+    "aria-hidden": "true"
+  }), " \u5099\u8003\u30FB\u6982\u8981"), React.createElement("textarea", {
+    className: "w-full h-20 p-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-app-500 outline-none text-sm leading-relaxed",
+    placeholder: "\u30B5\u30A4\u30C8\u306E\u6982\u8981\u3084\u4F7F\u3044\u3069\u3053\u308D\u306A\u3069",
+    value: site.memo,
+    onChange: e => {
+      if (editData) setEditData({
+        ...site,
+        memo: e.target.value
+      });else {
+        const newD = [...draftSites];
+        newD[index].memo = e.target.value;
+        setDraftSites(newD);
+      }
+    }
+  })), React.createElement("div", {
+    className: "flex gap-4 border-t border-slate-100 pt-4"
+  }, React.createElement("div", {
+    className: "flex-1"
+  }, React.createElement("label", {
+    className: "text-xs font-bold text-slate-500 ml-1 mb-1 block"
+  }, "\u52D5\u4F5C\u78BA\u8A8D\u72B6\u6CC1"), React.createElement("div", {
+    className: "flex gap-2"
+  }, [{
+    k: 'cbStudent',
+    l: '児童CB'
+  }, {
+    k: 'cbTeacher',
+    l: '教員CB'
+  }, {
+    k: 'pcStaff',
+    l: '職員PC'
+  }].map(item => React.createElement("div", {
+    key: item.k,
+    className: "flex-1"
+  }, React.createElement("div", {
+    className: "text-[10px] text-center text-slate-400 mb-1"
+  }, item.l), React.createElement("select", {
+    className: "w-full p-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-app-500 text-sm font-bold text-center appearance-none",
+    value: site[item.k],
+    onChange: e => {
+      const val = e.target.value;
+      if (editData) setEditData({
+        ...site,
+        [item.k]: val
+      });else {
+        const newD = [...draftSites];
+        newD[index][item.k] = val;
+        setDraftSites(newD);
+      }
+    }
+  }, React.createElement("option", null, "\u3007"), React.createElement("option", null, "\u25B3"), React.createElement("option", null, "\xD7")))))), React.createElement("div", {
+    className: "w-32"
+  }, React.createElement("label", {
+    className: "text-xs font-bold text-slate-500 ml-1 mb-1 block"
+  }, "\u767B\u9332\u8005"), React.createElement("input", {
+    type: "text",
+    className: "w-full p-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-app-500 outline-none text-sm font-bold mt-4",
+    value: site.author || '',
+    onChange: e => {
+      if (editData) setEditData({
+        ...site,
+        author: e.target.value
+      });else {
+        const newD = [...draftSites];
+        newD[index].author = e.target.value;
+        setDraftSites(newD);
+      }
+    }
+  }))), !editData && React.createElement("div", {
+    className: "text-[10px] text-slate-400 truncate mt-2 px-1"
+  }, "URL: ", site.url))))), (editData || draftSites.length > 0) && React.createElement("div", {
+    className: "p-4 bg-white border-t border-slate-100 flex gap-3 flex-col-reverse sm:flex-row shrink-0"
+  }, editData && React.createElement("button", {
+    onClick: () => {
+      if (deleteConfirmId === editData.id) handleDelete(editData.id);else {
+        setDeleteConfirmId(editData.id);
+        setTimeout(() => setDeleteConfirmId(null), 3000);
+      }
+    },
+    className: `py-3 px-6 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 sm:w-auto w-full ${deleteConfirmId === editData.id ? 'bg-red-500 text-white shadow-md hover:bg-red-600 animate-pulse' : 'bg-red-50 text-red-600 hover:bg-red-100'}`
+  }, React.createElement("span", {
+    className: `ms ms-${deleteConfirmId === editData.id ? 'warning' : 'delete'} text-xl`,
+    "aria-hidden": "true"
+  }), React.createElement("span", {
+    className: "whitespace-nowrap"
+  }, deleteConfirmId === editData.id ? '本当に削除しますか？' : '削除')), React.createElement("button", {
+    onClick: () => handleSave(editData || draftSites),
+    className: "flex-1 py-3 bg-app-500 text-white rounded-2xl font-bold shadow-md hover:bg-app-600 transition flex justify-center items-center gap-2"
+  }, React.createElement("span", {
+    className: "ms ms-save text-xl",
+    "aria-hidden": "true"
+  }), editData ? '更新内容を保存する' : 'この内容で登録する')))), React.createElement("footer", {
+    className: "fixed bottom-0 left-0 w-full z-40 bg-slate-100/90 backdrop-blur-md border-t border-slate-200 py-3"
+  }, React.createElement("p", {
+    className: "text-center text-sm text-slate-500"
+  }, "\xA9 2026 \u5B66\u7FD2\u30B5\u30A4\u30C8\u30EA\u30F3\u30AF\u96C6 ", React.createElement("a", {
+    href: "https://giga-school.com",
+    target: "_blank",
+    rel: "noopener noreferrer",
+    className: "no-underline text-inherit font-bold hover:text-app-600 transition-colors"
+  }, "GIGA\u5C71"))));
+};
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(React.createElement(App, null));
+</script>

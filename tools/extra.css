@@ -1,0 +1,10 @@
+/* Tailwind の出力のあとに置く、このアプリだけのスタイル。
+   以前は index.html の <style> に直接書いてあった。生成物は css.html。 */
+body { -webkit-tap-highlight-color: transparent; }
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+.glass { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(8px); }
+
+/* アイコンは icons.html（生成物）が .ms / .ms-<名前> として配る。
+   使っている分の SVG を mask-image にしたもので、合字の書体は読まない。
+   絵の大きさは font-size で決まる（1em）ので、Tailwind の text-xl などがそのまま効く。 */

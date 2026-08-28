@@ -4,7 +4,12 @@
    ============================================= */
 
 /* --- リセット＆ベース --- */
-@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap');
+/* 書体は自己ホスト（生成物 fonts.css と fonts/*.woff2）。popup.html が先に読む。
+
+   ⚠️ ここに Google Fonts の @import を戻さないこと。
+      Manifest V3 は外部からのコード読み込みを禁じているので、Zero-CDN 以前に
+      拡張の規約違反になる。学校のフィルタが塞いだときに書体が当たらない、
+      という話とは別に、拡張として通らない。 */
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
