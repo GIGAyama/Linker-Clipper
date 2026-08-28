@@ -140,6 +140,13 @@ export function svgToDataUri(svg) {
     .trim()
     // currentColor で塗るので、SVG 側の色指定は落として統一する
     .replace(/\sfill="[^"]*"/g, '')
+    /* class / width / height も落とす。
+       マスクの大きさは CSS（1em・center/contain）が決めるので効かないうえ、
+       bootstrap-icons の SVG は class="bi bi-rulers" のように**自分の名前**を
+       持っている。それが data: URI の中に残ると、走査で「そのアイコンも
+       使われている」と読めてしまう。実際に MIRAI-Compass で
+       bi-pencil-ruler の中の bi-rulers を拾った（2026-08-28）。 */
+    .replace(/\s(?:class|width|height)="[^"]*"/g, '')
     .replace('<svg ', '<svg fill="currentColor" ');
   const esc = body
     .replace(/"/g, "'")
