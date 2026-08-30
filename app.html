@@ -668,15 +668,19 @@ const App = () => {
     className: "ms ms-save text-xl",
     "aria-hidden": "true"
   }), editData ? '更新内容を保存する' : 'この内容で登録する')))), React.createElement("footer", {
-    className: "fixed bottom-0 left-0 w-full z-40 bg-slate-100/90 backdrop-blur-md border-t border-slate-200 py-3"
+    className: "fixed bottom-0 left-0 w-full z-40 bg-slate-100/90 backdrop-blur-md border-t border-slate-200 py-1"
   }, React.createElement("p", {
-    className: "text-center text-sm text-slate-500"
+    className: "flex flex-nowrap items-center justify-center gap-2 min-w-0 text-center text-sm text-slate-500"
+  }, React.createElement("span", {
+    className: "min-w-0 truncate"
   }, "\xA9 2026 \u5B66\u7FD2\u30B5\u30A4\u30C8\u30EA\u30F3\u30AF\u96C6 ", React.createElement("a", {
     href: "https://giga-school.com",
     target: "_blank",
     rel: "noopener noreferrer",
     className: "no-underline text-inherit font-bold hover:text-app-600 transition-colors"
-  }, "GIGA\u5C71"))));
+  }, "GIGA\u5C71")), React.createElement("span", {
+    "data-giga-links": true
+  }))));
 };
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(React.createElement(App, null));

@@ -538,9 +538,16 @@ const App = () => {
         </div>
       )}
 
-      <footer className="fixed bottom-0 left-0 w-full z-40 bg-slate-100/90 backdrop-blur-md border-t border-slate-200 py-3">
-        <p className="text-center text-sm text-slate-500">
-          © 2026 学習サイトリンク集 <a href="https://giga-school.com" target="_blank" rel="noopener noreferrer" className="no-underline text-inherit font-bold hover:text-app-600 transition-colors">GIGA山</a>
+      {/* フッターは 1 行に収める。画面の下に貼りついているので、太らせるとその
+          ぶん本文をずっと隠しつづける。幅が足りなくなったら切るのはクレジットの
+          ほうで、利用規約とプライバシーへの行き先は必ず残す。画面からそこへ
+          辿れるのは、ここだけしかない。中身は正本の部品が出す。
+          ⚠️ min-w-0 を落とさないこと。行き先は折り返さないので、これが無いと
+             最小幅が段を押し広げ、狭い画面で横に溢れる。 */}
+      <footer className="fixed bottom-0 left-0 w-full z-40 bg-slate-100/90 backdrop-blur-md border-t border-slate-200 py-1">
+        <p className="flex flex-nowrap items-center justify-center gap-2 min-w-0 text-center text-sm text-slate-500">
+          <span className="min-w-0 truncate">© 2026 学習サイトリンク集 <a href="https://giga-school.com" target="_blank" rel="noopener noreferrer" className="no-underline text-inherit font-bold hover:text-app-600 transition-colors">GIGA山</a></span>
+          <span data-giga-links />
         </p>
       </footer>
     </div>
