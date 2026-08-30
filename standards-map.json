@@ -1,6 +1,10 @@
 {
   "files": [
     {
+      "canonical": "web/giga-app-links.js",
+      "local": "web/giga-app-links.js"
+    },
+    {
       "canonical": "gas/Gemini.gs",
       "local": "Gemini.gs"
     },

@@ -8,7 +8,8 @@
     "build": "node tools/vendor/build-vendor.mjs && node tools/build.mjs",
     "build:fonts": "node tools/fonts/build-fonts.mjs",
     "check": "npm run build && npm run verify",
-    "verify": "node tools/vendor/verify-generated.mjs && node tools/check-generated.mjs"
+    "verify": "node tools/build-app-links.mjs --check && node tools/vendor/verify-generated.mjs && node tools/check-generated.mjs",
+    "build:app-links": "node tools/build-app-links.mjs"
   },
   "devDependencies": {
     "@babel/core": "7.28.4",
